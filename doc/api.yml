@@ -1,0 +1,26 @@
+openapi : 3.0.3
+
+info :
+  title : HEI - Grade management
+  description: >
+    API for managing courses, groups, grades, and graduates at higher education institutions.
+
+  version: "1.0.0"
+
+servers:
+  - url: https://mqge32enrlweaa4uuefdupafea0nawyt.lambda-url.eu-west-3.on.aws/
+
+tags:
+  - name: auth
+  - name: users
+  - name: promotions
+  - name: groups
+  - name: students
+  - name: teachers
+  - name: courses
+  - name: exams
+  - name: grades
+  - name: transcripts
+
+security:
+  - bearerAuth: []
