@@ -1,0 +1,891 @@
+openapi: 3.0.3
+info:
+  title: HEI Grade management
+  description: >
+    API for managing HEI courses, groups, grades and graduates.
+  version: "1.0.0"
+
+servers:
+  - url: https://mqge32enrlweaa4uuefdupafea0nawyt.lambda-url.eu-west-3.on.aws/
+
+tags:
+  - name: auth
+  - name: users
+  - name: tracks
+  - name: promotions
+  - name: groups
+  - name: students
+  - name: teachers
+  - name: courses
+  - name: exams
+  - name: grades
+  - name: transcripts
+
+security:
+  - bearerAuth: []
+
+paths:
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Authenticate and obtain a JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+      responses:
+        "200":
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+                  role: { $ref: "#/components/schemas/Role" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /users/me:
+    get:
+      tags: [users]
+      summary: Get the currently authenticated user's profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /tracks:
+    get:
+      tags: [tracks]
+      summary: List all tracks (e.g. EL, TN)
+      responses:
+        "200":
+          description: List of tracks
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Track" }
+    post:
+      tags: [tracks]
+      summary: Create a track (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrackInput" }
+      responses:
+        "201":
+          description: Track created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Track" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /promotions:
+    get:
+      tags: [promotions]
+      summary: List all promotions
+      responses:
+        "200":
+          description: List of promotions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Promotion" }
+    post:
+      tags: [promotions]
+      summary: Create a promotion (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PromotionInput" }
+      responses:
+        "201":
+          description: Promotion created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Promotion" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /promotions/{promotionId}:
+    parameters:
+      - $ref: "#/components/parameters/PromotionId"
+    get:
+      tags: [promotions]
+      summary: Get promotion details
+      responses:
+        "200":
+          description: Promotion details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Promotion" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /promotions/{promotionId}/results:
+    parameters:
+      - $ref: "#/components/parameters/PromotionId"
+    get:
+      tags: [promotions]
+      summary: Get full 3-year results for a promotion (admin only)
+      responses:
+        "200":
+          description: Aggregated promotion results
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PromotionResults" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /promotions/{promotionId}/graduates/export:
+    parameters:
+      - $ref: "#/components/parameters/PromotionId"
+    get:
+      tags: [promotions]
+      summary: >
+        Download the ranked list of graduates for a promotion as an
+        Excel file (no email involved). A graduate is a student who
+        scored >= 10/20 on every course of their track over the 3 years.
+        Rows are sorted by rank (rank, STD, lastname, firstname, overall average).
+      responses:
+        "200":
+          description: Generated Excel file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /groups:
+    get:
+      tags: [groups]
+      summary: List groups (filterable by promotion and/or track)
+      parameters:
+        - name: promotionId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: trackId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Group" }
+    post:
+      tags: [groups]
+      summary: Create a group (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GroupInput" }
+      responses:
+        "201":
+          description: Group created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Group" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /groups/{groupId}:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+    get:
+      tags: [groups]
+      summary: Get group details
+      responses:
+        "200":
+          description: Group details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Group" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /students:
+    get:
+      tags: [students]
+      summary: List students (admin/teacher only)
+      parameters:
+        - name: groupId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: trackId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: List of students
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Student" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [students]
+      summary: Create a student (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudentInput" }
+      responses:
+        "201":
+          description: Student created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Student" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /students/{studentId}:
+    parameters:
+      - $ref: "#/components/parameters/StudentId"
+    get:
+      tags: [students]
+      summary: Get student details (self, their teacher(s), or admin)
+      responses:
+        "200":
+          description: Student details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Student" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /students/{studentId}/group:
+    parameters:
+      - $ref: "#/components/parameters/StudentId"
+    patch:
+      tags: [students]
+      summary: >
+        Move the student to a new group (admin only). Closes the current
+        active GroupMembership (sets its endDate) and opens a new one,
+        so the group history is never lost.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newGroupId]
+              properties:
+                newGroupId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Student moved to the new group
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Student" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /students/{studentId}/group-history:
+    parameters:
+      - $ref: "#/components/parameters/StudentId"
+    get:
+      tags: [students]
+      summary: Get the full group membership history of a student
+      responses:
+        "200":
+          description: List of group memberships, past and current
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/GroupMembership" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /students/{studentId}/grades:
+    parameters:
+      - $ref: "#/components/parameters/StudentId"
+    get:
+      tags: [students]
+      summary: Get a student's grades (self, their teacher(s), or admin)
+      responses:
+        "200":
+          description: List of grades
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Grade" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /students/{studentId}/transcript:
+    parameters:
+      - $ref: "#/components/parameters/StudentId"
+    post:
+      tags: [transcripts]
+      summary: >
+        Trigger asynchronous generation of the PDF transcript, its upload
+        to S3, and delivery of a download link to the student by email.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                kind:
+                  type: string
+                  enum: [PROVISIONAL, FULL]
+                  default: FULL
+                  description: Whether the transcript covers a single year in progress or the full 3-year record.
+      responses:
+        "202":
+          description: Request accepted, processing asynchronously
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requestId: { type: string, format: uuid }
+                  status: { type: string, enum: [QUEUED] }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /teachers:
+    get:
+      tags: [teachers]
+      summary: List teachers (admin only)
+      responses:
+        "200":
+          description: List of teachers
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Teacher" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [teachers]
+      summary: Create a teacher (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TeacherInput" }
+      responses:
+        "201":
+          description: Teacher created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Teacher" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /teachers/{teacherId}:
+    parameters:
+      - $ref: "#/components/parameters/TeacherId"
+    get:
+      tags: [teachers]
+      summary: Get teacher details
+      responses:
+        "200":
+          description: Teacher details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Teacher" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /courses:
+    get:
+      tags: [courses]
+      summary: List courses (filterable by track)
+      parameters:
+        - name: trackId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Course" }
+    post:
+      tags: [courses]
+      summary: Create a course (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CourseInput" }
+      responses:
+        "201":
+          description: Course created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Course" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /courses/{courseId}:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+    get:
+      tags: [courses]
+      summary: Get course details
+      responses:
+        "200":
+          description: Course details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Course" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /courses/{courseId}/assignments:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+    get:
+      tags: [courses]
+      summary: List teacher/group assignments for a course
+      description: >
+        A course is not necessarily taught to every group, and can be
+        taught by several teachers. Each assignment links exactly one
+        teacher to one group for this course.
+      responses:
+        "200":
+          description: List of assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CourseAssignment" }
+    post:
+      tags: [courses]
+      summary: Assign a teacher to teach this course to a specific group (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [teacherId, groupId]
+              properties:
+                teacherId: { type: string, format: uuid }
+                groupId: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Assignment created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseAssignment" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /courses/{courseId}/assignments/{assignmentId}:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+      - name: assignmentId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [courses]
+      summary: Remove a teacher/group assignment from this course (admin only)
+      responses:
+        "204":
+          description: Assignment removed
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /exams:
+    get:
+      tags: [exams]
+      summary: List exams (filterable by course)
+      parameters:
+        - name: courseId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: List of exams
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Exam" }
+    post:
+      tags: [exams]
+      summary: >
+        Create an exam for a course (teacher assigned to the course, or admin).
+        The sum of coefficients across all exams of a given course must equal 1;
+        this is validated server-side and returns 400 if violated.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExamInput" }
+      responses:
+        "201":
+          description: Exam created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Exam" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /exams/{examId}:
+    parameters:
+      - $ref: "#/components/parameters/ExamId"
+    get:
+      tags: [exams]
+      summary: Get exam details
+      responses:
+        "200":
+          description: Exam details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Exam" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /grades:
+    post:
+      tags: [grades]
+      summary: Record a grade (teacher assigned to the course, or admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GradeInput" }
+      responses:
+        "201":
+          description: Grade created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Grade" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /grades/{gradeId}:
+    parameters:
+      - $ref: "#/components/parameters/GradeId"
+    get:
+      tags: [grades]
+      summary: Get grade details (the student concerned, their teacher, or admin)
+      responses:
+        "200":
+          description: Grade details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Grade" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [grades]
+      summary: >
+        Update an existing grade. A reason is mandatory and results in a
+        new entry being appended to the grade's history; the previous
+        value is never silently overwritten.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GradeUpdateInput" }
+      responses:
+        "200":
+          description: Grade updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Grade" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /grades/{gradeId}/history:
+    parameters:
+      - $ref: "#/components/parameters/GradeId"
+    get:
+      tags: [grades]
+      summary: Get the full modification history of a grade
+      responses:
+        "200":
+          description: Grade history
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/GradeHistoryEntry" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PromotionId:
+      name: promotionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    StudentId:
+      name: studentId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    TeacherId:
+      name: teacherId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CourseId:
+      name: courseId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ExamId:
+      name: examId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    GradeId:
+      name: gradeId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Not authenticated
+    Forbidden:
+      description: Access denied for this role
+    NotFound:
+      description: Resource not found
+    BadRequest:
+      description: Invalid request (e.g. missing reason, coefficients not summing to 1)
+
+  schemas:
+    Role:
+      type: string
+      enum: [STUDENT, TEACHER, ADMIN]
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        lastname: { type: string }
+        firstname: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: "#/components/schemas/Role" }
+
+    Track:
+      type: object
+      description: Study track, e.g. EL (Electronics) or TN (Telecom & Networks)
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string, example: "TN" }
+        label: { type: string, example: "Télécoms & Réseaux" }
+
+    TrackInput:
+      type: object
+      required: [code, label]
+      properties:
+        code: { type: string }
+        label: { type: string }
+
+    Promotion:
+      type: object
+      description: A 3-year cohort, e.g. "2023-2026"
+      properties:
+        id: { type: string, format: uuid }
+        ref: { type: string }
+        yearStart: { type: integer }
+        yearEnd: { type: integer }
+
+    PromotionInput:
+      type: object
+      required: [ref, yearStart, yearEnd]
+      properties:
+        ref: { type: string }
+        yearStart: { type: integer }
+        yearEnd: { type: integer }
+
+    PromotionResults:
+      type: object
+      properties:
+        promotion: { $ref: "#/components/schemas/Promotion" }
+        groups:
+          type: array
+          items: { $ref: "#/components/schemas/Group" }
+        averageByYear:
+          type: array
+          items:
+            type: object
+            properties:
+              year: { type: integer }
+              average: { type: number, format: double }
+
+    Group:
+      type: object
+      description: A concrete cohort of students for a given track and year, e.g. "TN1"
+      properties:
+        id: { type: string, format: uuid }
+        ref: { type: string, example: "TN1" }
+        yearLevel:
+          type: integer
+          description: Year within the track (1, 2 or 3)
+        promotionId: { type: string, format: uuid }
+        trackId: { type: string, format: uuid }
+
+    GroupInput:
+      type: object
+      required: [ref, yearLevel, promotionId, trackId]
+      properties:
+        ref: { type: string }
+        yearLevel: { type: integer }
+        promotionId: { type: string, format: uuid }
+        trackId: { type: string, format: uuid }
+
+    Student:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user: { $ref: "#/components/schemas/User" }
+        trackId: { type: string, format: uuid }
+        std:
+          type: string
+          description: HEI student identification number
+        currentGroupId:
+          type: string
+          format: uuid
+          description: Derived from the active (endDate = null) GroupMembership
+
+    StudentInput:
+      type: object
+      required: [lastname, firstname, email, trackId, groupId, std]
+      properties:
+        lastname: { type: string }
+        firstname: { type: string }
+        email: { type: string, format: email }
+        trackId: { type: string, format: uuid }
+        groupId: { type: string, format: uuid }
+        std: { type: string }
+
+    GroupMembership:
+      type: object
+      description: One period of a student's membership in a group. endDate = null means it is the currently active group.
+      properties:
+        id: { type: string, format: uuid }
+        studentId: { type: string, format: uuid }
+        groupId: { type: string, format: uuid }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date, nullable: true }
+
+    Teacher:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user: { $ref: "#/components/schemas/User" }
+
+    TeacherInput:
+      type: object
+      required: [lastname, firstname, email]
+      properties:
+        lastname: { type: string }
+        firstname: { type: string }
+        email: { type: string, format: email }
+
+    Course:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        ref: { type: string }
+        title: { type: string }
+        credits: { type: integer }
+        semester:
+          type: integer
+          description: Semester within the 3-year track (1 to 6)
+        trackId: { type: string, format: uuid }
+
+    CourseInput:
+      type: object
+      required: [ref, title, credits, semester, trackId]
+      properties:
+        ref: { type: string }
+        title: { type: string }
+        credits: { type: integer }
+        semester: { type: integer }
+        trackId: { type: string, format: uuid }
+
+    CourseAssignment:
+      type: object
+      description: Links one teacher to one course for one specific group
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        teacherId: { type: string, format: uuid }
+        groupId: { type: string, format: uuid }
+
+    Exam:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        dateExam: { type: string, format: date-time }
+        coefficient:
+          type: number
+          format: double
+          description: Must be such that all coefficients for the course's exams sum to 1
+
+    ExamInput:
+      type: object
+      required: [courseId, dateExam, coefficient]
+      properties:
+        courseId: { type: string, format: uuid }
+        dateExam: { type: string, format: date-time }
+        coefficient: { type: number, format: double }
+
+    Grade:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        examId: { type: string, format: uuid }
+        studentId: { type: string, format: uuid }
+        value: { type: number, format: double }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    GradeInput:
+      type: object
+      required: [examId, studentId, value]
+      properties:
+        examId: { type: string, format: uuid }
+        studentId: { type: string, format: uuid }
+        value: { type: number, format: double }
+
+    GradeUpdateInput:
+      type: object
+      required: [value, reason]
+      properties:
+        value: { type: number, format: double }
+        reason:
+          type: string
+          description: Mandatory reason for the change (dispute, error correction, etc.)
+
+    GradeHistoryEntry:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        gradeId: { type: string, format: uuid }
+        oldValue: { type: number, format: double }
+        newValue: { type: number, format: double }
+        reason: { type: string }
+        modifiedByUserId: { type: string, format: uuid }
+        modifiedAt: { type: string, format: date-time }
