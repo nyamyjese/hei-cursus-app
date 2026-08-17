@@ -1,12 +1,11 @@
 package com.hei.school.repository;
 
 import com.hei.school.model.Teacher;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TeacherRepository extends JpaRepository<Teacher, UUID> {
 
-    Optional<Teacher> findByUserId(UUID userId);
+  Optional<Teacher> findByUserId(UUID userId);
 }

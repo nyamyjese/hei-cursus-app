@@ -1,9 +1,7 @@
 package com.hei.school.repository;
 
 import com.hei.school.model.Promotion;
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.UUID;
-
-public interface PromotionRepository extends JpaRepository<Promotion, UUID> {
-}
+public interface PromotionRepository extends JpaRepository<Promotion, UUID> {}
