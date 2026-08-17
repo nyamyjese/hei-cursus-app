@@ -16,11 +16,13 @@ public class TranscriptTestController {
 
   @GetMapping("/test/transcript/send")
   public String testSendTranscript(@RequestParam String to) {
-    var data = new TranscriptData(
-            "STD001", "Rakoto Jean", 2026, false,
-            List.of(
-                    new CourseGrade("Prog4", 4, 14.5),
-                    new CourseGrade("Sys3", 4, 11.0)),
+    var data =
+        new TranscriptData(
+            "STD001",
+            "Rakoto Jean",
+            2026,
+            false,
+            List.of(new CourseGrade("Prog4", 4, 14.5), new CourseGrade("Sys3", 4, 11.0)),
             12.75);
     transcriptService.sendTranscriptByEmail(data, to);
     return "Relevé envoyé à " + to;
