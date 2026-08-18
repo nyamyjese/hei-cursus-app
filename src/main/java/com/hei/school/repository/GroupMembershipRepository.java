@@ -10,5 +10,5 @@ public interface GroupMembershipRepository extends JpaRepository<GroupMembership
 
   Optional<GroupMembership> findByStudentIdAndEndDateIsNull(UUID studentId);
 
-  List<GroupMembership> findByStudentIrdOrderByStartDateDesc(UUID studentId);
+  List<GroupMembership> findByStudentIdOrderByStartDateDesc(UUID studentId);
 }
