@@ -30,6 +30,11 @@ public class Exam {
   @Column(nullable = false, precision = 3, scale = 2)
   private BigDecimal coefficient;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  @Builder.Default
+  private ExamSession session = ExamSession.NORMALE;
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

@@ -15,7 +15,7 @@ public class DiplomaService {
   public File generateAndArchive(DiplomaList data) {
     var file = diplomaXlsxService.generate(data);
     var bucketKey = "diplomas/" + data.promotionName() + ".xlsx";
-    bucketComponent.upload(file, bucketKey); // archivage S3, comme demandé dans le sujet
-    return file; // servi directement en téléchargement, pas d'email
+    bucketComponent.upload(file, bucketKey);
+    return file;
   }
 }
