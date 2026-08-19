@@ -26,11 +26,14 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/admin/**")
                     .hasRole("ADMIN")
-                    .requestMatchers("/courses/*/grades/**")
+                    .requestMatchers("/courses/*/grades/**", "/grades/**")
                     .hasAnyRole("TEACHER", "ADMIN")
+                    .requestMatchers("/students/**")
+                    .hasAnyRole("STUDENT", "ADMIN")
                     .anyRequest()
                     .authenticated())
         .httpBasic(basic -> {});
+
     return http.build();
   }
 }
