@@ -1,94 +1,81 @@
-CREATE TABLE users (
+CREATE TABLE "user" (
+                        id UUID PRIMARY KEY,
+                        email VARCHAR(255) UNIQUE NOT NULL,
+                        role VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE track (
                        id UUID PRIMARY KEY,
-                       last_name VARCHAR(255) NOT NULL,
-                       first_name VARCHAR(255) NOT NULL,
-                       email VARCHAR(255) NOT NULL UNIQUE,
-                       password VARCHAR(255) NOT NULL,
-                       role VARCHAR(50) NOT NULL
+                       code VARCHAR(50) UNIQUE NOT NULL
 );
 
-CREATE TABLE tracks (
-                        id UUID PRIMARY KEY,
-                        code VARCHAR(50) NOT NULL UNIQUE,
-                        label VARCHAR(255) NOT NULL
+CREATE TABLE student (
+                         id UUID PRIMARY KEY,
+                         user_id UUID REFERENCES "user"(id),
+                         std VARCHAR(50) UNIQUE NOT NULL,
+                         track_id UUID REFERENCES track(id)
 );
 
-CREATE TABLE promotions (
-                            id UUID PRIMARY KEY,
-                            ref VARCHAR(50) NOT NULL UNIQUE,
-                            year_start INT NOT NULL,
-                            year_end INT NOT NULL
+CREATE TABLE teacher (
+                         id UUID PRIMARY KEY,
+                         user_id UUID REFERENCES "user"(id)
 );
 
-CREATE TABLE groups (
-                        id UUID PRIMARY KEY,
-                        ref VARCHAR(50) NOT NULL,
-                        year_level INT NOT NULL,
-                        promotion_id UUID NOT NULL REFERENCES promotions(id),
-                        track_id UUID NOT NULL REFERENCES tracks(id)
+CREATE TABLE promotion (
+                           id UUID PRIMARY KEY,
+                           name VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE students (
-                          id UUID PRIMARY KEY,
-                          user_id UUID NOT NULL UNIQUE REFERENCES users(id),
-                          track_id UUID NOT NULL REFERENCES tracks(id),
-                          std VARCHAR(50) NOT NULL UNIQUE
-);
-
-CREATE TABLE teachers (
-                          id UUID PRIMARY KEY,
-                          user_id UUID NOT NULL UNIQUE REFERENCES users(id)
+CREATE TABLE "group" (
+                         id UUID PRIMARY KEY,
+                         promotion_id UUID REFERENCES promotion(id),
+                         track_id UUID REFERENCES track(id),
+                         name VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE group_membership (
                                   id UUID PRIMARY KEY,
-                                  student_id UUID NOT NULL REFERENCES students(id),
-                                  group_id UUID NOT NULL REFERENCES groups(id),
+                                  student_id UUID REFERENCES student(id),
+                                  group_id UUID REFERENCES "group"(id),
                                   start_date DATE NOT NULL,
                                   end_date DATE
 );
 
-CREATE TABLE courses (
-                         id UUID PRIMARY KEY,
-                         ref VARCHAR(50) NOT NULL UNIQUE,
-                         title VARCHAR(255) NOT NULL,
-                         credits INT NOT NULL,
-                         semester INT NOT NULL,
-                         track_id UUID NOT NULL REFERENCES tracks(id)
+CREATE TABLE course (
+                        id UUID PRIMARY KEY,
+                        track_id UUID REFERENCES track(id),
+                        title VARCHAR(255) NOT NULL,
+                        credits INT NOT NULL,
+                        semester INT NOT NULL
 );
 
 CREATE TABLE course_assignment (
                                    id UUID PRIMARY KEY,
-                                   course_id UUID NOT NULL REFERENCES courses(id),
-                                   teacher_id UUID NOT NULL REFERENCES teachers(id),
-                                   group_id UUID NOT NULL REFERENCES groups(id),
-                                   UNIQUE (course_id, teacher_id, group_id)
+                                   course_id UUID REFERENCES course(id),
+                                   teacher_id UUID REFERENCES teacher(id),
+                                   group_id UUID REFERENCES "group"(id)
 );
 
-CREATE TABLE exams (
+CREATE TABLE exam (
+                      id UUID PRIMARY KEY,
+                      course_id UUID REFERENCES course(id),
+                      exam_date DATE NOT NULL,
+                      coefficient DECIMAL(3, 2) NOT NULL,
+                      session_type VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE grade (
                        id UUID PRIMARY KEY,
-                       course_id UUID NOT NULL REFERENCES courses(id),
-                       date_exams TIMESTAMP NOT NULL,
-                       coefficient NUMERIC(3,2) NOT NULL,
-                       session VARCHAR(20) NOT NULL DEFAULT 'NORMALE'
+                       exam_id UUID REFERENCES exam(id),
+                       student_id UUID REFERENCES student(id),
+                       value DECIMAL(4, 2) NOT NULL
 );
 
-CREATE TABLE grades (
-                        id UUID PRIMARY KEY,
-                        exam_id UUID NOT NULL REFERENCES exams(id),
-                        student_id UUID NOT NULL REFERENCES students(id),
-                        value NUMERIC(4,2) NOT NULL,
-                        created_at TIMESTAMP NOT NULL,
-                        updated_at TIMESTAMP NOT NULL,
-                        UNIQUE (exam_id, student_id)
-);
-
-CREATE TABLE grade_histories (
-                                 id UUID PRIMARY KEY,
-                                 grade_id UUID NOT NULL REFERENCES grades(id),
-                                 old_value NUMERIC(4,2) NOT NULL,
-                                 new_value NUMERIC(4,2) NOT NULL,
-                                 reason VARCHAR(500) NOT NULL,
-                                 modified_by_user_id UUID NOT NULL REFERENCES users(id),
-                                 modified_at TIMESTAMP NOT NULL
+CREATE TABLE grade_history (
+                               id UUID PRIMARY KEY,
+                               grade_id UUID REFERENCES grade(id),
+                               old_value DECIMAL(4, 2) NOT NULL,
+                               new_value DECIMAL(4, 2) NOT NULL,
+                               modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                               reason TEXT NOT NULL
 );
