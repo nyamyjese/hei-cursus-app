@@ -16,21 +16,21 @@ import org.springframework.ui.Model;
 @ExtendWith(MockitoExtension.class)
 class PromotionViewControllerTest {
 
-    @Mock PromotionRepository promotionRepository;
-    @Mock Model model;
+  @Mock PromotionRepository promotionRepository;
+  @Mock Model model;
 
-    @InjectMocks PromotionViewController controller;
+  @InjectMocks PromotionViewController controller;
 
-    @Test
-    void listPromotions_adds_to_model_and_returns_view_name() {
+  @Test
+  void listPromotions_adds_to_model_and_returns_view_name() {
 
-        when(promotionRepository.findAll()).thenReturn(List.of());
+    when(promotionRepository.findAll()).thenReturn(List.of());
 
-        String viewName = controller.listPromotions(model);
+    String viewName = controller.listPromotions(model);
 
-        assertEquals("promotions", viewName);
+    assertEquals("promotions", viewName);
 
-        verify(promotionRepository).findAll();
-        verify(model).addAttribute("promotions", List.of());
-    }
+    verify(promotionRepository).findAll();
+    verify(model).addAttribute("promotions", List.of());
+  }
 }
