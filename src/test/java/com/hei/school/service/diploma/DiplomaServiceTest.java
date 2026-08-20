@@ -15,22 +15,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DiplomaServiceTest {
 
-    @Mock DiplomaXlsxService xlsxService;
-    @Mock BucketComponent bucketComponent;
+  @Mock DiplomaXlsxService xlsxService;
+  @Mock BucketComponent bucketComponent;
 
-    @InjectMocks DiplomaService diplomaService;
+  @InjectMocks DiplomaService diplomaService;
 
-    @Test
-    void generates_and_archives_diploma_list() throws Exception {
-        DiplomaList data = new DiplomaList("PROMO_2026", List.of());
-        File dummyFile = File.createTempFile("dummy", ".xlsx");
-        dummyFile.deleteOnExit();
+  @Test
+  void generates_and_archives_diploma_list() throws Exception {
+    DiplomaList data = new DiplomaList("PROMO_2026", List.of());
+    File dummyFile = File.createTempFile("dummy", ".xlsx");
+    dummyFile.deleteOnExit();
 
-        when(xlsxService.generate(data)).thenReturn(dummyFile);
+    when(xlsxService.generate(data)).thenReturn(dummyFile);
 
-        diplomaService.generateAndArchive(data);
+    diplomaService.generateAndArchive(data);
 
-        verify(xlsxService).generate(data);
-        verify(bucketComponent).upload(dummyFile, "diplomas/PROMO_2026.xlsx");
-    }
+    verify(xlsxService).generate(data);
+    verify(bucketComponent).upload(dummyFile, "diplomas/PROMO_2026.xlsx");
+  }
 }
