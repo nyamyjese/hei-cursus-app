@@ -1,7 +1,11 @@
 package com.hei.school.repository;
 
 import com.hei.school.model.Promotion;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface PromotionRepository extends JpaRepository<Promotion, UUID> {}
+public interface PromotionRepository extends JpaRepository<Promotion, UUID> {
+
+  Optional<Promotion> findByRef(String ref);
+}

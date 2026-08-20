@@ -33,7 +33,7 @@ public class Exam {
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   @Builder.Default
-  private ExamSession session = ExamSession.NORMALE;
+  private Session session = Session.NORMALE;
 
   @Override
   public boolean equals(Object o) {

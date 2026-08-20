@@ -1,0 +1,4 @@
+INSERT INTO users (id, last_name, first_name, email, password, role) VALUES
+                                                                         (gen_random_uuid(), 'Admin', 'Test', 'admin@hei.test', '$2b$10$LZKRjEF3foAZmN54ShW7r.UOYfiIjOcYmdNOHbCcyrfyq4Af1vjva', 'ADMIN'),
+                                                                         (gen_random_uuid(), 'Prof', 'Test', 'teacher@hei.test', '$2b$10$btMGF6APxApF4Q5T65xVROhvw3FbnXs3gqtffWUYmrraSxKhlmkpe', 'TEACHER'),
+                                                                         (gen_random_uuid(), 'Etudiant', 'Test', 'student@hei.test', '$2b$10$OClwCX/4eW7CDeWASfFK9ukwrdLJoHkVKr6OlUrljYGY8X7rppueS', 'STUDENT');

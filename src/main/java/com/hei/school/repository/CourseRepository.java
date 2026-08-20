@@ -10,4 +10,6 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
   List<Course> findByTrackId(UUID trackId);
 
   List<Course> findByTrackIdAndSemester(UUID trackId, int semester);
+
+  List<Course> findByTrackIdIn(List<UUID> trackIds);
 }

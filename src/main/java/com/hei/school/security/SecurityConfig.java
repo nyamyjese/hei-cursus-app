@@ -22,9 +22,10 @@ public class SecurityConfig {
     http.csrf(csrf -> csrf.disable())
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/ping", "/health/**", "/swagger-ui/**", "/v3/api-docs/**")
+                auth.requestMatchers(
+                        "/ping", "/health/**", "/swagger-ui/**", "/v3/api-docs/**", "/test/**")
                     .permitAll()
-                    .requestMatchers("/admin/**")
+                    .requestMatchers("/admin/**", "/promotions/**")
                     .hasRole("ADMIN")
                     .requestMatchers("/courses/*/grades/**", "/grades/**")
                     .hasAnyRole("TEACHER", "ADMIN")

@@ -4,7 +4,9 @@ import com.hei.school.model.Course;
 import com.hei.school.model.Grade;
 import com.hei.school.repository.CourseRepository;
 import com.hei.school.repository.GradeRepository;
+import com.hei.school.repository.TrackRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -16,9 +18,19 @@ public class StudentService {
 
   private final CourseRepository courseRepository;
   private final GradeRepository gradeRepository;
+  private final TrackRepository trackRepository;
+
+  private List<Course> coursesForStudent(UUID studentTrackId) {
+    UUID communTrackId =
+        trackRepository
+            .findByCode("COMMUN")
+            .orElseThrow(() -> new IllegalStateException("Track COMMUN introuvable"))
+            .getId();
+    return courseRepository.findByTrackIdIn(List.of(studentTrackId, communTrackId));
+  }
 
   public boolean isGraduated(UUID studentId, UUID trackId) {
-    List<Course> trackCourses = courseRepository.findByTrackId(trackId);
+    List<Course> trackCourses = coursesForStudent(trackId);
 
     for (Course course : trackCourses) {
       List<Grade> courseGrades =
@@ -34,7 +46,7 @@ public class StudentService {
 
   public boolean isYearValidated(UUID studentId, UUID trackId, int academicYear) {
     List<Course> yearlyCourses =
-        courseRepository.findByTrackId(trackId).stream()
+        coursesForStudent(trackId).stream()
             .filter(course -> getYearFromSemester(course.getSemester()) == academicYear)
             .toList();
 
@@ -55,12 +67,28 @@ public class StudentService {
     }
 
     BigDecimal yearlyAverage =
-        totalScore.divide(new BigDecimal(yearlyCourses.size()), 2, java.math.RoundingMode.HALF_UP);
+        totalScore.divide(new BigDecimal(yearlyCourses.size()), 2, RoundingMode.HALF_UP);
 
     return (validatedCredits >= 30) && (yearlyAverage.compareTo(new BigDecimal("10.00")) >= 0);
   }
 
-  private BigDecimal calculateCourseAverage(List<Grade> grades) {
+  /** Moyenne générale sur l'ensemble du parcours (COMMUN + track), pour la liste des diplômés. */
+  public BigDecimal calculateGeneralAverage(UUID studentId, UUID trackId) {
+    List<Course> courses = coursesForStudent(trackId);
+    BigDecimal total = BigDecimal.ZERO;
+    int count = 0;
+    for (Course course : courses) {
+      List<Grade> courseGrades =
+          gradeRepository.findByStudentIdAndCourseId(studentId, course.getId());
+      total = total.add(calculateCourseAverage(courseGrades));
+      count++;
+    }
+    return count > 0
+        ? total.divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP)
+        : BigDecimal.ZERO;
+  }
+
+  public BigDecimal calculateCourseAverage(List<Grade> grades) {
     if (grades == null || grades.isEmpty()) return BigDecimal.ZERO;
     BigDecimal total = BigDecimal.ZERO;
     for (Grade grade : grades) {
